@@ -32,13 +32,13 @@ class PandasSQLDataInserter(DataInserter):
                     index=False,
                 )
                 logger.info(f"Inserted {len(df)} rows into {table_name} table")
-                return
+                return True
             except exc.SQLAlchemyError as e:
                 logger.error(
                     f"Failed to insert data. Attempt {i + 1} of {self.max_retries}. Error: {e}"  # noqa: E501
                 )
                 if (i + 1) == self.max_retries:
-                    raise
+                    return False
 
                 time.sleep(i + 1)
 

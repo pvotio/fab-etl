@@ -1,3 +1,11 @@
+def empty_str_to_none(data: dict) -> dict:
+    for k, v in data.items():
+        if isinstance(v, str) and not v:
+            data[k] = None
+
+    return data
+
+
 def statement_to_dict(item):
     statement = {
         "transaction_reference": item["transaction_reference"],
@@ -16,7 +24,7 @@ def statement_to_dict(item):
         "final_closing_balance_date": item["final_closing_balance"].date,
     }
 
-    return statement
+    return empty_str_to_none(statement)
 
 
 def transaction_to_dict(item):
@@ -37,4 +45,4 @@ def transaction_to_dict(item):
         "transaction_details": item["transaction_details"],
     }
 
-    return trx
+    return empty_str_to_none(trx)
