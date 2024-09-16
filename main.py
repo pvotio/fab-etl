@@ -30,7 +30,6 @@ def main():
     df_transformed = transform(parsed_data)
     logger.info(f"Inserting Data into {settings.OUTPUT_TABLE}")
     logger.info(df_transformed)
-    df_transformed.to_csv(f"{settings.OUTPUT_TABLE}.csv")
     res = conn.insert(df_transformed, settings.OUTPUT_TABLE)
     if res:
         engine.delete_sftp_files()
