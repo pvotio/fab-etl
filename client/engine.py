@@ -3,17 +3,17 @@ import os
 import mt940
 
 from client import utils
-from config import logger, settings
+from config import logger
+from database.helper import get_latest_date
 
 
 class Engine:
 
     DIR = "/outgoing"
 
-    def __init__(self, sftp, transport, conn):
+    def __init__(self, sftp, transport):
         self.sftp = sftp
         self.transport = transport
-        self.conn = conn
         self.sftp_files = []
         self.raw_data = {}
         self.parsed_data = []
@@ -45,14 +45,8 @@ class Engine:
         return
 
     def skip_sftp_processed_files(self):
-        query = f"""SELECT TOP 1 mtime
-        FROM {settings.OUTPUT_TABLE}
-        ORDER BY mtime DESC"""
-        self.conn.db_connection.connect()
-        conn = self.conn.db_connection.engine.raw_connection()
-        cursor = conn.cursor()
         try:
-            last_mtime = cursor.execute(query).fetchone()[0]
+            last_mtime = get_latest_date()
             logger.debug(f"Most recent mtime: {last_mtime}")
             if self.sftp_files[-1][1] == last_mtime:
                 return -1
@@ -64,10 +58,6 @@ class Engine:
         except Exception as e:
             logger.error(f"Error fetching or processing mtime: {str(e)}")
             return False
-
-        finally:
-            cursor.close()
-            conn.close()
 
     def read_sftp_files(self):
         # skip_idx = self.skip_sftp_processed_files()
