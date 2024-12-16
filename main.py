@@ -23,7 +23,7 @@ def main():
     logger.info("Transforming Data")
     df_transformed = transform(parsed_data)
     logger.info(f"Inserting Data into {settings.OUTPUT_TABLE}")
-    logger.info(df_transformed)
+    logger.info(f"\n{df_transformed}")
     conn = init_db_instance()
     res = conn.insert_table(df_transformed, settings.OUTPUT_TABLE)
     if res:
