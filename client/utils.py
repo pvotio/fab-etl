@@ -1,3 +1,17 @@
+import requests
+
+from config import logger
+
+
+def get_external_ip():
+    try:
+        ip = requests.get("https://api.ipify.org").content.decode("utf8")
+        return ip
+    except Exception as e:
+        logger.error(f"Failed to fetch machine external IP: {e}")
+        return False
+
+
 def empty_str_to_none(data: dict) -> dict:
     for k, v in data.items():
         if isinstance(v, str) and not v:

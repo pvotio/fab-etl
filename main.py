@@ -1,11 +1,16 @@
 from client import Engine
 from client.sftp import sftp_session
+from client.utils import get_external_ip
 from config import logger, settings
 from database.helper import init_db_instance
 from transformer import transform
 
 
 def main():
+    external_ip = get_external_ip()
+    if external_ip:
+        logger.info(f"Machine external IP address: {external_ip}")
+
     logger.info("Initializing FAB Client Engine")
     sftp, transport = sftp_session(
         host=settings.SFTP_HOST,
