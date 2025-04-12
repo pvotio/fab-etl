@@ -39,7 +39,7 @@ This project automates the process of fetching SWIFT messages from an SFTP serve
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/alimghmi/fab
+   git clone https://github.com/pvotio/fab_etl
    cd fab
    ```
 
