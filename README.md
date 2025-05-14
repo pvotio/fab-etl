@@ -1,83 +1,117 @@
-# First Abu Dhabi Bank SWIFT Message Loader
+# FAB MT940 ETL Pipeline
 
-This application is designed to load SWIFT messages from an SFTP server belonging to the First Abu Dhabi Bank. It handles the fetching of SWIFT files, their transformation, and subsequent insertion into a Microsoft SQL Server database.
+This project implements an ETL (Extract, Transform, Load) pipeline that securely connects to an SFTP server to retrieve **MT940 financial statement files**, parses and transforms the content into structured data, and loads the result into a **Microsoft SQL Server** database.
 
-## Table of Contents
+## Overview
 
-- [Project Description](#project-description)
-- [Features](#features)
-- [Setup](#setup)
-  - [Pre-requisites](#pre-requisites)
-  - [Installation](#installation)
-  - [Environment Variables](#environment-variables)
-- [Usage](#usage)
-- [Contributing](#contributing)
+### Purpose
 
-## Project Description
+This pipeline automates the processing of MT940 files typically used in financial transaction reporting. It is designed to:
+- Retrieve `.txt` files in MT940 format from a secure SFTP server.
+- Parse and normalize banking statement and transaction records.
+- Enrich with metadata (e.g., filename, modified time).
+- Insert the result into a relational SQL Server table.
 
-This project automates the process of fetching SWIFT messages from an SFTP server, parsing them, transforming the data, and inserting it into a specified table in a Microsoft SQL Server database.
+This is especially useful for compliance reporting, account reconciliation, and financial data aggregation tasks.
 
-## Features
+## Source of Data
 
-- **SFTP Integration**: Securely connects to an SFTP server to download SWIFT message files.
-- **SWIFT Message Parsing**: Automatically parses SWIFT messages using the MT940 format.
-- **Data Transformation**: Transforms the parsed data to match the required database schema.
-- **Database Insertion**: Inserts the transformed data into an SQL Server table.
-- **SFTP Cleanup**: Automatically deletes processed files from the SFTP server after successful insertion.
+All data comes from an SFTP endpoint hosted by the **FAB (First Abu Dhabi Bank)** or another entity serving MT940 exports. Key details:
 
+- Files reside in the `/outgoing` directory.
+- Each file follows the MT940 SWIFT format and is parsed using the `mt-940` library.
+- Timestamp-based filtering is used to avoid reprocessing files.
 
-## Setup
+Access to the server requires valid credentials and whitelisted IPs.
 
-### Pre-requisites
+## Application Flow
 
-- Python 3.x
-- Microsoft SQL Server instance
-- SFTP credentials for accessing the SWIFT message files
+The main process, executed from `main.py`, includes:
 
-### Installation
+1. **External IP Logging**:
+   - Retrieves and logs the machine’s external IP for traceability.
 
-1. Clone the repository:
+2. **Connect to SFTP**:
+   - Establishes an authenticated session using `paramiko`.
 
-   ```bash
-   git clone https://github.com/pvotio/fab_etl
-   cd fab
-   ```
+3. **Read MT940 Files**:
+   - Loads `.txt` files, reads content, and parses each into statements and transaction rows.
 
-2. Install dependencies:
+4. **Parse & Transform**:
+   - MT940 fields are decoded into a normalized dictionary via a custom transformer.
 
-    ```bash
-    pip install -r requirements.txt
-    ```
+5. **Insert into SQL Server**:
+   - Results are inserted into the table defined by `OUTPUT_TABLE`.
+   - Previously inserted files are tracked using `mtime` (last-modified timestamp).
 
-### Environment Variables
+6. **Cleanup**:
+   - Successfully processed files are deleted from the server to prevent duplication.
 
-Set up the environment variables by renaming `.env.sample` to `.env` and filling in the following values:
+## Project Structure
 
-- `LOG_LEVEL`: Level of logging (default: INFO)
-- `OUTPUT_TABLE`: The name of the table where the transformed data will be inserted.
-- `SFTP_HOST`: The host of the SFTP server.
-- `SFTP_PORT`: The port of the SFTP server.
-- `SFTP_USER`: The username for SFTP login.
-- `SFTP_PASSWORD`: The password for SFTP login.
-- `MSSQL_SERVER`: The SQL Server address.
-- `MSSQL_DATABASE`: The database name in SQL Server.
-- `MSSQL_USERNAME`: The username for SQL Server login.
-- `MSSQL_PASSWORD`: The password for SQL Server login.
+```
+fab-etl-main/
+├── client/               # SFTP and MT940 logic
+│   ├── engine.py         # Fetch, parse, and manage ETL state
+│   └── sftp.py           # Secure connection handler
+├── config/               # Logging and settings loader
+├── database/             # SQL Server interface helpers
+├── transformer/          # Data transformation utilities
+├── main.py               # Entrypoint for pipeline
+├── .env.sample           # Environment config template
+├── Dockerfile            # Containerization support
+```
 
+## Environment Variables
 
-## Usage
+Create a `.env` file based on `.env.sample`. Key fields:
 
-1. Ensure that the environment variables are correctly configured.
-2. Run the application:
-    ```bash
-    python main.py
-    ```
+| Variable | Description |
+|----------|-------------|
+| `SFTP_HOST`, `SFTP_PORT` | SFTP connection info |
+| `SFTP_USER`, `SFTP_PASSWORD` | SFTP credentials |
+| `OUTPUT_TABLE` | Target SQL Server table name |
+| `INSERTER_MAX_RETRIES` | Max DB insert retries |
+| `MSSQL_*` | SQL Server configuration |
+| `LOG_LEVEL` | Logging verbosity |
 
-## Contributing
-Contributions are welcome! Please follow these steps:
+## Docker Support
 
-1. Fork the repository.
-2. Create a new feature branch (`git checkout -b feature-branch`).
-3. Commit your changes (`git commit -m 'Add some feature'`).
-4. Push to the branch (`git push origin feature-branch`).
-5. Open a pull request.
+Build and run this ETL as a container:
+
+```bash
+docker build -t fab-etl .
+docker run --env-file .env fab-etl
+```
+
+## Requirements
+
+Install Python dependencies with:
+
+```bash
+pip install -r requirements.txt
+```
+
+Key libraries:
+- `mt-940`: MT940 parsing
+- `pandas`: Data wrangling
+- `paramiko`: SFTP communication
+- `SQLAlchemy`, `pyodbc`: Database access
+- `fast-to-sql`: Bulk data loading
+
+## Running the Pipeline
+
+Make sure the `.env` is correctly configured, then run:
+
+```bash
+python main.py
+```
+
+Logs will indicate:
+- Files downloaded
+- Records parsed and inserted
+- Cleanup and deletion confirmation
+
+## License
+
+This project is licensed under MIT. Use of MT940 files and connection to remote servers must comply with data agreements and IT security standards.
