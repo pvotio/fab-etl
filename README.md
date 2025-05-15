@@ -1,4 +1,4 @@
-# FAB MT940 ETL Pipeline
+# First Abu Dhabi Bank (FAB) MT940 ETL Pipeline
 
 This project implements an ETL (Extract, Transform, Load) pipeline that securely connects to an SFTP server to retrieve **MT940 financial statement files**, parses and transforms the content into structured data, and loads the result into a **Microsoft SQL Server** database.
 
